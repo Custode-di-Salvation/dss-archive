@@ -1176,6 +1176,11 @@ body.scp-theme .card > * { position: relative; z-index: 1; }
     grid-template-columns: 1fr;
   }
   
+  aside.filters {
+    position: static;
+    margin-bottom: 24px;
+  }
+  
   /* Fascicolo Content */
   .fascicolo-wrapper {
     padding: 12px 16px;

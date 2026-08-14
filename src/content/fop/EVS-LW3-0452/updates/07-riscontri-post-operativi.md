@@ -1,0 +1,27 @@
+---
+data: "26/03/2026"
+titolo: "Rapporto Operativo: Riscontri Post-Operativi e Interrogatori (Op. Deep Drag)"
+responsabile: "Scer. Alden Locke, Cap. Mae Kline, V.Scer. Jennifer Mortensen (matricole A-LO412, M-KL978, J-MO527)"
+---
+
+### ANALISI TATTICO-FORENSI (VEICOLI E SITO GAMMA)
+* **Perquisizione Automezzi:** Le indagini sul Ford Transit rivelavano la presenza di casse industriali contenenti Dimetilsolfossido (DMSO, solvente accelerante per assorbimento cutaneo), un verricello elettrico modificato e cariche da demolizione subacquea potenziate artigianalmente. All'interno del pick-up di Clark veniva individuato un doppio fondo contenente un fucile di precisione (Remington 700 con ottica termica e silenziatore), munizionamento subsonico, e uno scanner radio per le frequenze delle forze dell'ordine.
+* **Ritrovamento materiale anomalo:** Sotto il sedile del pick-up veniva repertato un contenitore isolante in piombo contenente frammenti di roccia nerastra. Tali frammenti assorbono attivamente luce, calore e frequenze radio, comportandosi come "buchi neri" termici (nessuna emissione radiologica riscontrata).
+* **Bonifica Sito Gamma (segheria):** La struttura risultava abbandonata ma ampiamente riadattata. Venivano rinvenute betoniere, saldatrici e polvere metallica utilizzate per la forgiatura dell'ancoraggio. Un macchinario risultava impiegato per la frantumazione della roccia anomala, polverizzata e miscelata a collanti industriali (i rilievi genetici confermavano la presenza dei cultisti in loco).
+* **Mappatura rete logistica:** Veniva recuperata e ricostruita una mappa topografica su acetato della valle di Salvation. Il documento non traccia conformazioni standard, bensì evidenzia faglie energetiche e punti di assottigliamento del velo tra realtà altre. Cauldron Lake è indicato come epicentro, supportato da nodi secondari (Faro, Scuola, Museo, Vecchia Miniera, Hacketts Camp).
+
+### RISCONTRI GEOLOGICI E STRUMENTALI (CAULDRON LAKE)
+* **Analisi acque e metalli:** L'acqua prelevata in corrispondenza del punto di innesco risultava totalmente priva di microrganismi e con densità alterata (assimilabile a distillazione nel vuoto). I frammenti della catena recuperati presentavano micro-fratture strutturali compatibili con esposizione allo zero assoluto e a gravose anomalie pressorie.
+* **Scansione fondale (sonar/ROV):** L'ancora di cemento da 80 kg e il blocco principale della catena risultavano disintegrati in pulviscolo metallico e micro-frammenti, distrutti dal contraccolpo pressorio innescato dalla chiusura della soglia. Al centro della navata della cappella sommersa, veniva rilevata una depressione (cratere liscio) generata da un'estesa pressione applicata dal basso verso l'alto.
+* **Anomalie Sensoriali:** I sensori termici registravano temperature vicine allo zero assoluto sul fondale, sebbene l'acqua non risultasse ghiacciata. Veniva inoltre captata un'emissione acustica anomala (rumore bianco continuo) proveniente dalle fondamenta della cappella.
+
+### RILIEVI TRAMITE ABILITÀ PU.N-ISP.CV E ANALISI PARAUTILITARIA
+* **Ispezione reperti rocciosi:** L'analisi tramite abilità parautilitarie PU.N-ISP.CV della V.Scer. Mortensen sui frammenti di roccia isolati nel piombo restituiva una percezione di vuoto assoluto e gelo spirituale, evidenziando la matrice di devozione malata degli operatori. È stato accertato che tali frammenti costituiscono un'emanazione diretta dell'Entità Paranatuale (EP) di supervisione nota come "PE.AD-M13".
+* **Ispezione ancoraggio (catena):** L'analisi tattile dei frammenti d'acciaio trasmetteva l'immagine della cappella sommersa. Il fondale veniva percepito come una membrana elastica tesa allo spasimo da una forza titanica e ostile proveniente dal basso, contenuta a stento da un confine tra realtà altre in rapido deterioramento.
+
+### DEBRIEFING ESTESO CULTISTI E MONITORAGGIO RETI
+* **Monitoraggio comunicazioni (SIGINT):** I telefoni e le frequenze radio dei cultisti venivano clonati e monitorati h24. Non veniva registrato alcun traffico dati (in/out) né alcun protocollo di allerta, confermando l'assoluto isolamento della cellula operativa.
+* **Interrogatorio Sincretico:** Sotto interrogatorio pressante, emergeva che i soggetti erano ex-membri scissionisti della *Setta della Soglia*, manipolati dalla promessa di salvezza ("Terra Promessa") formulata telepaticamente dall'EP PE.AD-M13 in aperto contrasto alle direttive della setta originaria.
+* **Movente e Strategia Operativa:** I soggetti confermavano il loro ruolo logistico, finalizzato al rapimento di individui dal "Fattore Psi (Ψ) debole" per alimentare il rito di PE.AD-M13. Lo scopo finale dell'entità è sfruttare il logoramento di realtà altra invernale per infrangere la "gabbia" in cui è attualmente confinato.
+* **Reazione a catena tra realtà altre:** Veniva svelato il fine strategico ultimo dell'operazione. Il posizionamento delle pietre anomale negli altri nodi cittadini (Faro, Scuola, Museo, Miniera, Hacketts Camp) aveva lo scopo di preparare una "reazione a catena". Qualora l'epicentro (Cauldron Lake) avesse ceduto, la violenta discrepanza pressoria avrebbe innescato il collasso simultaneo di tutte le altre cicatrici, determinando l'implosione di realtà altra dell'intera valle.
+* Si disponeva l'immediata mobilitazione (OP-09) per la bonifica e il recupero delle pietre anomale presso gli altri nodi cittadini, operazione conclusasi con successo e con l'acquisizione dei materiali da parte del DSS

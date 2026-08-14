@@ -1,0 +1,292 @@
+---
+interface Props {
+  title: string;
+  section?: 'fop' | 'scp' | 'azioni' | 'aggiornamenti' | 'manuale' | 'registro';
+  requiresAA?: boolean;
+  paranaturale?: boolean;
+  eyesOnlyRequired?: string;
+}
+const { title, section = 'fop', requiresAA = false, paranaturale = false, eyesOnlyRequired = '' } = Astro.props;
+const isScp = section === 'scp';
+
+import '../styles/global.css';
+---
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Archivio Digitale del Dipartimento dello Sceriffo di Salvation — Database interno fascicoli operativi e schede classificazione paranaturale.">
+  <title>{title} — Archivio D.S.S.</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+</head>
+<body id="app-body" class:list={[isScp && 'scp-theme']}
+      data-requires-aa={String(requiresAA)}
+      data-paranaturale={String(paranaturale)}
+      data-eyes-only={eyesOnlyRequired}>
+
+  <!-- SYSBAR -->
+  <div class="sysbar">
+    <div class="left">
+      <span><span class="dot"></span>SLVCLOUD ONLINE</span>
+      <span>MDT-04 / VOLANTE 12</span>
+      <span>SESSION 0x8F2A</span>
+    </div>
+    <div class="right">
+      <span>USR: <strong id="usr-name">—</strong></span>
+      <span>LAST SYNC: <span id="sync-time"></span></span>
+    </div>
+  </div>
+
+  <!-- MAIN HEADER -->
+  <header class="main">
+    <div class="brand">
+      <div class="badge-star">★</div>
+      <div>
+        <h1>Archivio D.S.S.</h1>
+        <div class="subtitle">DIPARTIMENTO SCERIFFO DI SALVATION</div>
+      </div>
+    </div>
+    <div id="auth-area">
+      <!-- Filled by JS -->
+    </div>
+  </header>
+
+  <!-- NAVIGATION -->
+  <nav class="sections">
+    <a href="/" class:list={[section === 'fop' && 'active']}>▸ Fascicoli F.O.P.</a>
+    <a href="/scp/" class:list={[section === 'scp' && 'active']} id="nav-scp">▸ Schede S.C.P.</a>
+    <a href="/registro/" class:list={[section === 'registro' && 'active']}>▸ Registro R.P.</a>
+    <a href="/azioni/" class:list={[section === 'azioni' && 'active']}>▸ Azioni in Corso</a>
+    <a href="/aggiornamenti/" class:list={[section === 'aggiornamenti' && 'active']}>▸ Aggiornamenti</a>
+    <a href="/manuale/" class:list={[section === 'manuale' && 'active']}>▸ Manuale Operativo</a>
+    <a href="https://salvation.forumcommunity.net/?f=9152770" target="_blank" rel="noopener noreferrer">▸ Bacheche SLVCloud <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 0.8em; margin-left: 4px;"></i></a>
+  </nav>
+
+  <!-- AUTH MODAL -->
+  <div class="auth-overlay" id="auth-overlay">
+    <div class="auth-modal">
+      <h2><i class="fa-solid fa-shield-halved"></i> Autenticazione A.A.</h2>
+      <p>Inserisci la tua matricola per accedere ai contenuti classificati.</p>
+      <input type="text" id="matricola-input" placeholder="Es. X-XX999" maxlength="10"
+             autocomplete="off" spellcheck="false">
+      <button onclick="tryAuth()">Verifica Clearance</button>
+      <button class="auth-cancel" onclick="closeAuthModal()">Annulla</button>
+      <div class="auth-error" id="auth-error"></div>
+    </div>
+  </div>
+
+  <!-- ACCESS DENIED (for pages that require AA) -->
+  <div class="access-denied-page" id="access-denied">
+    <h2><i class="fa-solid fa-lock"></i> Accesso Negato</h2>
+    <p>Questa sezione è riservata ad Agenti Autorizzati (A.A.). Autenticarsi con la propria matricola per procedere.</p>
+    <button class="aa-login-btn" onclick="openAuthModal()"><i class="fa-solid fa-key"></i> Autenticati come A.A.</button>
+  </div>
+
+  <!-- SCI ACCESS DENIED (for eyes only pages) -->
+  <div class="access-denied-page sci-denied-page" id="sci-denied" style="display: none;">
+    <h2><i class="fa-solid fa-triangle-exclamation"></i> LCD-4 EYES ONLY</h2>
+    <p>ATTENZIONE: Il fascicolo richiesto è sotto regime SCI (Sensitive Compartmented Information). L'accesso è ristretto esclusivamente a matricole specificamente autorizzate.</p>
+    <button class="aa-login-btn" onclick="openAuthModal()"><i class="fa-solid fa-fingerprint"></i> Inserisci Codice Autorizzazione</button>
+  </div>
+
+  <!-- ACTUAL CONTENT (hidden if access denied) -->
+  <div id="page-content">
+    <slot />
+  </div>
+
+  <script is:inline>
+    // ═══════════════════════════════════════
+    // MATRICOLE AUTORIZZATE (AA)
+    // ═══════════════════════════════════════
+    const AUTHORIZED_AA = {
+      'J-AN389': { nome: 'Julian Andrews', ruolo: 'Capitano FEU' },
+      'J-MO527': { nome: 'Jennifer Mortensen', ruolo: 'Vice-sceriffo' },
+      'I-KN183': { nome: 'Isaac Knowles', ruolo: 'Capitano DCU' },
+      'A-LO412': { nome: 'Alden Locke', ruolo: 'Sceriffo' },
+      'D-HO795': { nome: 'Dominic Holt', ruolo: 'Agente DCU' },
+    };
+
+    // ── Timestamp live ──
+    function updateTime() {
+      const now = new Date();
+      const pad = n => String(n).padStart(2, '0');
+      const el = document.getElementById('sync-time');
+      if (el) el.textContent =
+        `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())} UTC`;
+    }
+    updateTime();
+    setInterval(updateTime, 1000);
+
+    // ── Auth State ──
+    function getAuthState() {
+      const matricola = localStorage.getItem('dss-aa-matricola');
+      if (matricola && AUTHORIZED_AA[matricola.toUpperCase()]) {
+        return { authenticated: true, matricola: matricola.toUpperCase(), ...AUTHORIZED_AA[matricola.toUpperCase()] };
+      }
+      return { authenticated: false };
+    }
+
+    function isAA() {
+      return getAuthState().authenticated;
+    }
+
+    // ── Auth Modal ──
+    function openAuthModal() {
+      document.getElementById('auth-overlay').classList.add('visible');
+      const input = document.getElementById('matricola-input');
+      input.value = '';
+      input.classList.remove('error');
+      document.getElementById('auth-error').textContent = '';
+      setTimeout(() => input.focus(), 100);
+    }
+
+    function closeAuthModal() {
+      document.getElementById('auth-overlay').classList.remove('visible');
+    }
+
+    function tryAuth() {
+      const input = document.getElementById('matricola-input');
+      const val = input.value.trim().toUpperCase();
+      const errorEl = document.getElementById('auth-error');
+
+      if (!val) {
+        errorEl.textContent = 'Inserire la matricola.';
+        input.classList.add('error');
+        setTimeout(() => input.classList.remove('error'), 500);
+        return;
+      }
+
+      if (AUTHORIZED_AA[val]) {
+        localStorage.setItem('dss-aa-matricola', val);
+        closeAuthModal();
+        applyAuthState();
+      } else {
+        errorEl.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> MATRICOLA NON RICONOSCIUTA';
+        input.classList.add('error');
+        setTimeout(() => input.classList.remove('error'), 500);
+      }
+    }
+
+    function logout() {
+      localStorage.removeItem('dss-aa-matricola');
+      applyAuthState();
+      // If on a restricted page, redirect
+      const body = document.getElementById('app-body');
+      if (body.dataset.requiresAa === 'true' || body.dataset.paranaturale === 'true') {
+        window.location.href = '/';
+      }
+    }
+
+    // ── Enter key on input ──
+    document.getElementById('matricola-input').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') tryAuth();
+    });
+
+    // ── Apply Auth State to UI ──
+    function applyAuthState() {
+      const state = getAuthState();
+      const authArea = document.getElementById('auth-area');
+      const usrName = document.getElementById('usr-name');
+      const body = document.getElementById('app-body');
+      const pageContent = document.getElementById('page-content');
+      const accessDenied = document.getElementById('access-denied');
+      const sciDenied = document.getElementById('sci-denied');
+      const requiresAA = body.dataset.requiresAa === 'true';
+      const paranaturale = body.dataset.paranaturale === 'true';
+      const eyesOnly = body.dataset.eyesOnly;
+
+      // Reset displays
+      pageContent.style.display = 'none';
+      accessDenied.style.display = 'none';
+      if (sciDenied) sciDenied.style.display = 'none';
+
+      if (state.authenticated) {
+        // Show authenticated state
+        usrName.textContent = `${state.nome.toUpperCase()} [A.A.]`;
+        authArea.innerHTML = `
+          <div class="aa-badge">
+            <span class="aa-name"><i class="fa-solid fa-shield-check"></i> A.A. ATTIVO</span>
+            <span class="aa-matricola">${state.matricola} — ${state.nome}, ${state.ruolo}</span>
+            <button class="aa-logout-btn" onclick="logout()"><i class="fa-solid fa-power-off"></i> LOGOUT</button>
+          </div>
+        `;
+
+        if (eyesOnly && !eyesOnly.split(',').map(s => s.trim()).includes(state.matricola)) {
+          // Authenticated but WRONG matricola for SCI
+          if (sciDenied) sciDenied.style.display = 'flex';
+        } else {
+          // Full access
+          pageContent.style.display = '';
+        }
+
+        // Uncensor cards based on clearance
+        document.querySelectorAll('[data-paranaturale="true"], [data-eyes-only]:not([data-eyes-only=""])').forEach(el => {
+          const eyesOnlyAttr = el.getAttribute('data-eyes-only');
+          let hasAccess = true;
+          if (eyesOnlyAttr) {
+            hasAccess = eyesOnlyAttr.split(',').map(s => s.trim()).includes(state.matricola);
+          }
+          if (hasAccess) {
+            el.classList.remove('censored');
+          } else {
+            el.classList.add('censored');
+          }
+        });
+
+        // SCP nav link — allow
+        const scpNav = document.getElementById('nav-scp');
+        if (scpNav) scpNav.onclick = null;
+
+      } else {
+        // Show unauthenticated state
+        usrName.textContent = 'AGENTE NON AUTENTICATO';
+        authArea.innerHTML = `
+          <button class="aa-login-btn" onclick="openAuthModal()"><i class="fa-solid fa-key"></i> Autenticati come A.A.</button>
+        `;
+
+        // Censor paranaturale and eyes-only cards
+        document.querySelectorAll('[data-paranaturale="true"], [data-eyes-only]:not([data-eyes-only=""])').forEach(el => {
+          el.classList.add('censored');
+        });
+
+        // Block SCP nav
+        const scpNav = document.getElementById('nav-scp');
+        if (scpNav) {
+          scpNav.onclick = function(e) {
+            e.preventDefault();
+            openAuthModal();
+          };
+        }
+
+        // If this page requires AA or SCI, block it
+        if (eyesOnly) {
+          if (sciDenied) sciDenied.style.display = 'flex';
+        } else if (requiresAA || paranaturale) {
+          accessDenied.style.display = 'flex';
+        } else {
+          pageContent.style.display = '';
+        }
+      }
+
+      // Dispatch global event so page scripts (like graph) can update
+      window.dispatchEvent(new CustomEvent('auth-changed', { detail: { isAA: state.authenticated } }));
+    }
+
+    // ── Click handler for censored cards ──
+    document.addEventListener('click', function(e) {
+      const card = e.target.closest('.card.censored');
+      if (card) {
+        e.preventDefault();
+        e.stopPropagation();
+        openAuthModal();
+      }
+    }, true);
+
+    // Init
+    applyAuthState();
+  </script>
+
+</body>
+</html>

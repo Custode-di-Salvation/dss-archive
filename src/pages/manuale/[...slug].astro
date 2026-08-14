@@ -1,0 +1,103 @@
+---
+import MainLayout from '../../layouts/MainLayout.astro';
+import { getCollection, render } from 'astro:content';
+
+export async function getStaticPaths() {
+  const manuali = await getCollection('manuale');
+  return manuali.map(page => ({
+    params: { slug: page.id },
+    props: { page },
+  }));
+}
+
+const { page } = Astro.props;
+const { Content, headings } = await render(page);
+
+// Fetch all pages to build the sidebar index
+const allPages = await getCollection('manuale');
+const sortedPages = allPages.sort((a, b) => a.data.ordine - b.data.ordine);
+
+// Group by category
+const categorie = [...new Set(sortedPages.map(p => p.data.categoria))];
+---
+
+<MainLayout title={page.data.titolo} section="manuale">
+  <div class="fascicolo-wrapper">
+    
+    {/* ── Sidebar (Index) ── */}
+    <nav class="fascicolo-toc">
+      <div class="fascicolo-toc-title" style="margin-bottom: 16px;">
+        <i class="fa-solid fa-book-journal-whills"></i> MANUALE D.O.S.P.
+      </div>
+      
+      {categorie.map(cat => (
+        <div style="margin-bottom: 12px;">
+          <div style="font-family: var(--font-mono); font-size: 10px; color: var(--muted); text-transform: uppercase; margin-bottom: 4px; letter-spacing: 1px;">
+            {cat}
+          </div>
+          {sortedPages.filter(p => p.data.categoria === cat).map(p => (
+            <a 
+              href={`/manuale/${p.id}/`} 
+              class:list={['toc-link', p.id === page.id && 'active']}
+              style={p.id === page.id ? 'color: var(--accent); font-weight: bold; border-left: 2px solid var(--accent); padding-left: 6px;' : 'padding-left: 8px;'}
+            >
+              {p.data.titolo}
+            </a>
+          ))}
+        </div>
+      ))}
+      
+      <div class="fascicolo-toc-title" style="margin-top: 24px; margin-bottom: 8px;">In questa pagina:</div>
+      {headings.filter(h => h.depth <= 3).map(h => (
+        <a href={`#${h.slug}`} class={h.depth === 3 ? 'toc-h3' : ''}>
+          {h.text}
+        </a>
+      ))}
+    </nav>
+
+    {/* ── Main content ── */}
+    <div class="fascicolo-main-content">
+      <div class="fascicolo-header">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+          <div>
+            <div class="category-tag" style="margin-bottom: 8px;">{page.data.categoria}</div>
+            <h1>{page.data.titolo}</h1>
+          </div>
+        </div>
+        <div class="fascicolo-meta" style="margin-top: 16px;">
+          <div><dt>Aggiornato il</dt><dd>{page.data.aggiornato_il || '—'}</dd></div>
+          <div><dt>Livello Accesso</dt><dd>Base / Misto</dd></div>
+        </div>
+      </div>
+
+      <div class="fascicolo-body" id="manuale-body">
+        <Content />
+      </div>
+      
+    </div>
+  </div>
+</MainLayout>
+
+<style>
+  .toc-link {
+    display: block;
+    font-size: 13px;
+    color: var(--text-secondary);
+    text-decoration: none;
+    margin-bottom: 4px;
+    transition: all 0.2s;
+  }
+  .toc-link:hover {
+    color: var(--text);
+  }
+</style>
+
+<style is:global>
+  /* Disabilita i contatori CSS automatici ereditati da fascicolo-body */
+  #manuale-body h1::before, 
+  #manuale-body h2::before, 
+  #manuale-body h3::before, 
+  #manuale-body h4::before {
+    content: none !important;
+  }
+</style>

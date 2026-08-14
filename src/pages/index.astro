@@ -1,0 +1,119 @@
+---
+import MainLayout from '../layouts/MainLayout.astro';
+import { getCollection } from 'astro:content';
+
+const allFop = await getCollection('fop');
+const fops = allFop.sort((a, b) => {
+  const stateOrder: Record<string, number> = { Aperto: 0, Cold: 1, Chiuso: 2, Archiviato: 3 };
+  const diff = (stateOrder[a.data.stato] ?? 9) - (stateOrder[b.data.stato] ?? 9);
+  if (diff !== 0) return diff;
+  return b.data.codice_univoco.localeCompare(a.data.codice_univoco);
+});
+
+
+
+function stampClass(stato: string): string {
+  const map: Record<string, string> = { Aperto: 'open', Chiuso: 'chiuso', Cold: 'cold', Archiviato: 'archiviato' };
+  return map[stato] || 'open';
+}
+---
+
+<MainLayout title="Fascicoli F.O.P." section="fop">
+  <main class="page-layout">
+
+    <aside class="filters">
+      <div class="filter-group">
+        <h3>Ricerca</h3>
+        <input type="text" id="search-input" placeholder="Codice, nome, luogo…">
+      </div>
+      <div class="filter-group">
+        <h3>Stato</h3>
+        <label><input type="checkbox" class="filter-stato" value="Aperto" checked> Aperto</label>
+        <label><input type="checkbox" class="filter-stato" value="Chiuso" checked> Chiuso</label>
+        <label><input type="checkbox" class="filter-stato" value="Cold" checked> Cold Case</label>
+        <label><input type="checkbox" class="filter-stato" value="Archiviato" checked> Archiviato</label>
+      </div>
+      <div class="filter-group">
+        <h3>Natura</h3>
+        <label><input type="checkbox" class="filter-natura" value="false" checked> Ordinaria</label>
+        <label><input type="checkbox" class="filter-natura" value="true" checked> Paranaturale</label>
+      </div>
+      <div class="filter-group">
+        <h3>Agenti</h3>
+        {[...new Set(fops.flatMap(f => f.data.agenti_coinvolti))]
+          .filter(a => !['Ten. Moore', 'Cap. Mike Thompson', 'Dr.ssa Elena Santos', 'Lavina Hemsworth', 'Declan Hayes'].includes(a))
+          .map(agente => (
+          <label><input type="checkbox" class="filter-agente" value={agente}> {agente}</label>
+        ))}
+      </div>
+    </aside>
+
+    <section>
+      <div class="grid" id="fop-grid">
+        {fops.map(fop => (
+          <a
+            href={`/fop/${fop.id}/`}
+            class:list={['card', (fop.data.paranaturale || fop.data.eyes_only) && 'censored']}
+            data-stato={fop.data.stato}
+            data-paranaturale={String(fop.data.paranaturale)}
+            data-eyes-only={fop.data.eyes_only || ''}
+            data-agenti={JSON.stringify(fop.data.agenti_coinvolti)}
+            data-search={`${fop.data.codice_univoco} ${fop.data.titolo} ${fop.data.agenti_coinvolti.join(' ')} ${fop.data.personaggi_coinvolti.join(' ')} ${fop.data.luoghi_chiave.join(' ')}`.toLowerCase()}
+          >
+            <div class="stamp-wrapper">
+            <span class:list={['stamp', stampClass(fop.data.stato)]}>
+              {fop.data.stato}
+            </span>
+            {fop.data.paranaturale && <span class="stamp classified">Secretato</span>}
+          </div>
+          <div class="code">
+              {fop.data.codice_univoco}
+              {fop.data.classificazione_evento && (
+                <span class="category-tag" style="margin-left: 6px;">{fop.data.classificazione_evento}</span>
+              )}
+            </div>
+            <h4>{fop.data.titolo}</h4>
+            <div class="meta">
+              <span><i class="fa-solid fa-calendar"></i> {fop.data.data_apertura}</span>
+              <span><i class="fa-solid fa-user"></i> {fop.data.agenti_coinvolti[0] || '—'}</span>
+            </div>
+            <p class="excerpt">
+              Luoghi: {fop.data.luoghi_chiave.join(', ') || '—'}
+            </p>
+          </a>
+        ))}
+      </div>
+    </section>
+
+  </main>
+
+  <script is:inline>
+    // ── Client-side filters ──
+    function applyFilters() {
+      const search = document.getElementById('search-input').value.toLowerCase();
+      const activeStati = [...document.querySelectorAll('.filter-stato:checked')].map(c => c.value);
+      const activeNatura = [...document.querySelectorAll('.filter-natura:checked')].map(c => c.value);
+      const activeAgenti = [...document.querySelectorAll('.filter-agente:checked')].map(c => c.value);
+
+      document.querySelectorAll('#fop-grid .card').forEach(card => {
+        const stato = card.dataset.stato;
+        const paranaturale = card.dataset.paranaturale;
+        const searchText = card.dataset.search;
+        const agenti = JSON.parse(card.dataset.agenti || '[]');
+
+        let show = true;
+        if (!activeStati.includes(stato)) show = false;
+        if (!activeNatura.includes(paranaturale)) show = false;
+        if (search && !searchText.includes(search)) show = false;
+        if (activeAgenti.length > 0 && !agenti.some(a => activeAgenti.includes(a))) show = false;
+
+        card.style.display = show ? '' : 'none';
+      });
+    }
+
+    document.getElementById('search-input').addEventListener('input', applyFilters);
+    document.querySelectorAll('.filter-stato, .filter-natura, .filter-agente').forEach(cb => {
+      cb.addEventListener('change', applyFilters);
+    });
+  </script>
+</MainLayout>

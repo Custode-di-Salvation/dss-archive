@@ -1,0 +1,210 @@
+---
+import MainLayout from '../layouts/MainLayout.astro';
+import { getCollection } from 'astro:content';
+
+const registroData = await getCollection('registro');
+const registrati = registroData.sort((a, b) => {
+  return a.data.codice_rp.localeCompare(b.data.codice_rp);
+});
+
+function statoClass(stato: string): string {
+  const map: Record<string, string> = { Compliant: 'open', Absconder: 'danger', Deceduto: 'cold', Incarcerato: 'chiuso', Irreperibile: 'cold' };
+  return map[stato] || 'open';
+}
+
+function tierClass(tier: string): string {
+  const map: Record<string, string> = { 'Tier 1': 'tier-1', 'Tier 2': 'tier-2', 'Tier 3': 'tier-3' };
+  return map[tier] || '';
+}
+---
+
+<MainLayout title="Registro R.P." section="registro" requiresAA={true}>
+  <main class="page-layout">
+
+    <aside class="filters">
+      <div class="filter-group">
+        <h3>Ricerca R.P.</h3>
+        <input type="text" id="search-input" placeholder="Codice, nome, classificazione...">
+      </div>
+      <div class="filter-group">
+        <h3>Livello Rischio</h3>
+        <label><input type="checkbox" class="filter-tier" value="Tier 1" checked> Tier 1</label>
+        <label><input type="checkbox" class="filter-tier" value="Tier 2" checked> Tier 2</label>
+        <label><input type="checkbox" class="filter-tier" value="Tier 3" checked> Tier 3</label>
+      </div>
+      <div class="filter-group">
+        <h3>Stato</h3>
+        <label><input type="checkbox" class="filter-stato" value="Compliant" checked> Compliant</label>
+        <label><input type="checkbox" class="filter-stato" value="Absconder" checked> Absconder</label>
+        <label><input type="checkbox" class="filter-stato" value="Incarcerato" checked> Incarcerato</label>
+      </div>
+    </aside>
+
+    <section>
+      <div style="margin-bottom: 24px;">
+        <h2 style="font-family: var(--font-mono); font-size: 20px; color: var(--text); letter-spacing: 1px; text-transform: uppercase;">
+          <i class="fa-solid fa-address-card" style="color: var(--accent); margin-right: 8px;"></i> Registro Parautilitari (R.P.)
+        </h2>
+        <p style="font-size: 13px; color: var(--muted); margin-top: 4px;">
+          Database anagrafico e di sorveglianza per i soggetti affetti da parautilitarismo attivi sul territorio. 
+          L'accesso è limitato al personale autorizzato del DSS.
+        </p>
+      </div>
+
+      <div class="registry-table-wrapper">
+        <table class="registry-table">
+          <thead>
+            <tr>
+              <th>Codice</th>
+              <th>Nome Soggetto</th>
+              <th>Classificazione</th>
+              <th>Tier</th>
+              <th>Stato</th>
+              <th>Ultimo Indirizzo Noto</th>
+              <th>Precedenti</th>
+            </tr>
+          </thead>
+          <tbody id="registry-tbody">
+            {registrati.map(rp => (
+              <tr 
+                class="registry-row"
+                data-tier={rp.data.tier}
+                data-stato={rp.data.stato}
+                data-search={`${rp.data.codice_rp} ${rp.data.nome_completo} ${rp.data.classificazione} ${rp.data.indirizzo}`.toLowerCase()}
+              >
+                <td style="font-family: var(--font-mono); color: var(--accent); font-weight: bold;">{rp.data.codice_rp}</td>
+                <td style="font-weight: bold; color: var(--text);">{rp.data.nome_completo}</td>
+                <td><span class="category-tag">{rp.data.classificazione}</span></td>
+                <td>
+                  <span class:list={['tier-badge', tierClass(rp.data.tier)]}>{rp.data.tier}</span>
+                </td>
+                <td>
+                  <span class:list={['stamp', 'small', statoClass(rp.data.stato)]}>{rp.data.stato}</span>
+                </td>
+                <td class="address-cell">{rp.data.indirizzo}</td>
+                <td style="text-align: center;">
+                  {rp.data.precedenti_penali ? 
+                    <i class="fa-solid fa-triangle-exclamation" style="color: var(--danger);" title="Sì"></i> : 
+                    <i class="fa-solid fa-minus" style="color: var(--border);" title="No"></i>
+                  }
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+</MainLayout>
+
+<style>
+  .registry-table-wrapper {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow-x: auto;
+  }
+
+  .registry-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    text-align: left;
+  }
+
+  .registry-table th {
+    background: rgba(255, 255, 255, 0.03);
+    padding: 12px 16px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .registry-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    vertical-align: middle;
+  }
+
+  .registry-table tr:last-child td {
+    border-bottom: none;
+  }
+
+  .registry-table tr:hover td {
+    background: rgba(255, 255, 255, 0.02);
+  }
+
+  .address-cell {
+    color: var(--text-secondary);
+    font-size: 12px;
+    max-width: 250px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .tier-badge {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 2px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+  }
+
+  .tier-1 { background: rgba(56, 189, 248, 0.1); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.2); }
+  .tier-2 { background: rgba(250, 204, 21, 0.1); color: #facc15; border: 1px solid rgba(250, 204, 21, 0.2); }
+  .tier-3 { background: rgba(248, 113, 113, 0.1); color: #f87171; border: 1px solid rgba(248, 113, 113, 0.2); }
+
+  .stamp.small {
+    font-size: 9px;
+    padding: 2px 6px;
+    position: static;
+    transform: none;
+    display: inline-block;
+  }
+
+  .stamp.danger {
+    color: var(--danger);
+    border-color: var(--danger);
+  }
+</style>
+
+<script>
+  // Simple filtering logic for the registry table
+  const searchInput = document.getElementById('search-input') as HTMLInputElement;
+  const tierCheckboxes = document.querySelectorAll('.filter-tier') as NodeListOf<HTMLInputElement>;
+  const statoCheckboxes = document.querySelectorAll('.filter-stato') as NodeListOf<HTMLInputElement>;
+  const rows = document.querySelectorAll('.registry-row') as NodeListOf<HTMLElement>;
+
+  function filterRegistry() {
+    const query = searchInput.value.toLowerCase();
+    
+    const activeTiers = Array.from(tierCheckboxes).filter(cb => cb.checked).map(cb => cb.value);
+    const activeStati = Array.from(statoCheckboxes).filter(cb => cb.checked).map(cb => cb.value);
+
+    rows.forEach(row => {
+      const searchData = row.dataset.search || '';
+      const tier = row.dataset.tier || '';
+      const stato = row.dataset.stato || '';
+
+      const matchSearch = searchData.includes(query);
+      const matchTier = activeTiers.includes(tier);
+      const matchStato = activeStati.includes(stato);
+
+      if (matchSearch && matchTier && matchStato) {
+        row.style.display = '';
+      } else {
+        row.style.display = 'none';
+      }
+    });
+  }
+
+  searchInput?.addEventListener('input', filterRegistry);
+  tierCheckboxes.forEach(cb => cb.addEventListener('change', filterRegistry));
+  statoCheckboxes.forEach(cb => cb.addEventListener('change', filterRegistry));
+</script>

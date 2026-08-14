@@ -1,0 +1,138 @@
+---
+import MainLayout from '../../layouts/MainLayout.astro';
+import { getCollection } from 'astro:content';
+
+const allScp = await getCollection('scp');
+const scps = allScp.sort((a, b) => {
+  const isClosedA = a.data.stato === 'Neutralizzato' || a.data.stato === 'Chiuso';
+  const isClosedB = b.data.stato === 'Neutralizzato' || b.data.stato === 'Chiuso';
+  if (isClosedA && !isClosedB) return 1;
+  if (!isClosedA && isClosedB) return -1;
+  return (b.data.idr ?? 0) - (a.data.idr ?? 0);
+});
+
+function threatClass(lm: string): string {
+  if (lm.includes('4')) return 'lw4';
+  if (lm.includes('3')) return 'lw3';
+  if (lm.includes('2')) return 'lw2';
+  return 'lw1';
+}
+
+function idrLevel(idr: number | null | undefined): string {
+  if (!idr) return 'low';
+  if (idr >= 7) return 'high';
+  if (idr >= 5) return 'mid';
+  return 'low';
+}
+
+function stampClass(stato: string): string {
+  const map: Record<string, string> = { Neutralizzato: 'chiuso', Latente: 'cold', Stabile: 'open' };
+  return map[stato] || 'open';
+}
+---
+
+<MainLayout title="Schede S.C.P." section="scp" requiresAA={true}>
+  <main class="page-layout">
+
+    <aside class="filters">
+      <div class="filter-group">
+        <h3>Ricerca</h3>
+        <input type="text" id="search-scp" placeholder="Codice, denominazione…">
+      </div>
+      <div class="filter-group">
+        <h3>Stato</h3>
+        <label><input type="checkbox" class="filter-stato" value="" checked> Attivo</label>
+        <label><input type="checkbox" class="filter-stato" value="Latente" checked> Latente</label>
+        <label><input type="checkbox" class="filter-stato" value="Stabile" checked> Stabile</label>
+        <label><input type="checkbox" class="filter-stato" value="Neutralizzato" checked> Neutralizzato</label>
+      </div>
+      <div class="filter-group">
+        <h3>Categoria</h3>
+        <label><input type="checkbox" class="filter-cat" value="RE-ALT" checked> RE-ALT</label>
+        <label><input type="checkbox" class="filter-cat" value="LOP" checked> LOP</label>
+        <label><input type="checkbox" class="filter-cat" value="EP" checked> EP</label>
+        <label><input type="checkbox" class="filter-cat" value="OOP" checked> OOP</label>
+        <label><input type="checkbox" class="filter-cat" value="PU" checked> PU</label>
+      </div>
+      <div class="filter-group">
+        <h3>Livello Minaccia</h3>
+        <label><input type="checkbox" class="filter-lm" value="LW-1" checked> LW-1</label>
+        <label><input type="checkbox" class="filter-lm" value="LW-2" checked> LW-2</label>
+        <label><input type="checkbox" class="filter-lm" value="LW-3" checked> LW-3</label>
+        <label><input type="checkbox" class="filter-lm" value="LW-4" checked> LW-4</label>
+      </div>
+    </aside>
+
+    <section>
+      <div class="grid" id="scp-grid">
+        {scps.map(scp => (
+          <a
+            href={`/scp/${scp.id}/`}
+            class="card"
+            data-cat={scp.data.categoria}
+            data-lm={scp.data.livello_minaccia}
+            data-stato={scp.data.stato || ''}
+            data-search={`${scp.data.codice_univoco} ${scp.data.denominazione} ${scp.data.categoria} ${scp.data.tipologia || ''}`.toLowerCase()}
+          >
+            <div class="stamp-wrapper">
+              {scp.data.stato && (
+                <span class:list={['stamp', stampClass(scp.data.stato)]}>{scp.data.stato}</span>
+              )}
+              <span class="stamp classified">{scp.data.categoria}</span>
+            </div>
+            <div class="code">{scp.data.codice_univoco}</div>
+            <h4>{scp.data.denominazione}</h4>
+            <div class="meta">
+              <span><i class="fa-solid fa-calendar"></i> {scp.data.data_apertura}</span>
+              <span class:list={['threat-badge', threatClass(scp.data.livello_minaccia)]}>
+                {scp.data.livello_minaccia}
+              </span>
+            </div>
+            {scp.data.idr && (
+              <div class="idr-meter">
+                <span>IDR {scp.data.idr}</span>
+                <div class="idr-bar">
+                  <div class:list={['idr-bar-fill', idrLevel(scp.data.idr)]} style={`width: ${Math.min((scp.data.idr / 10) * 100, 100)}%`}></div>
+                </div>
+              </div>
+            )}
+            {scp.data.tipologia && (
+              <p class="excerpt">{scp.data.tipologia}</p>
+            )}
+            <span class="category-tag">{scp.data.categoria}</span>
+          </a>
+        ))}
+      </div>
+    </section>
+
+  </main>
+
+  <script is:inline>
+    function applyScpFilters() {
+      const search = document.getElementById('search-scp').value.toLowerCase();
+      const activeCats = [...document.querySelectorAll('.filter-cat:checked')].map(c => c.value);
+      const activeLm = [...document.querySelectorAll('.filter-lm:checked')].map(c => c.value);
+      const activeStati = [...document.querySelectorAll('.filter-stato:checked')].map(c => c.value);
+
+      document.querySelectorAll('#scp-grid .card').forEach(card => {
+        const cat = card.dataset.cat;
+        const lm = card.dataset.lm;
+        const stato = card.dataset.stato || '';
+        const searchText = card.dataset.search;
+
+        let show = true;
+        if (!activeCats.includes(cat)) show = false;
+        if (!activeLm.includes(lm)) show = false;
+        if (!activeStati.includes(stato)) show = false;
+        if (search && !searchText.includes(search)) show = false;
+
+        card.style.display = show ? '' : 'none';
+      });
+    }
+
+    document.getElementById('search-scp').addEventListener('input', applyScpFilters);
+    document.querySelectorAll('.filter-cat, .filter-lm, .filter-stato').forEach(cb => {
+      cb.addEventListener('change', applyScpFilters);
+    });
+  </script>
+</MainLayout>

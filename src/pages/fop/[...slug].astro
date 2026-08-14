@@ -1,0 +1,136 @@
+---
+import MainLayout from '../../layouts/MainLayout.astro';
+import { getCollection, render } from 'astro:content';
+
+export async function getStaticPaths() {
+  const fops = await getCollection('fop');
+  return fops.map(fop => ({
+    params: { slug: fop.id },
+    props: { fop },
+  }));
+}
+
+const { fop } = Astro.props;
+const { Content, headings } = await render(fop);
+
+// Get updates for this FOP
+const allUpdates = await getCollection('fopUpdates');
+const fopFolder = fop.id.replace(/\/index$/, '').replace(/^.*\//, '');
+const updates = allUpdates
+  .filter(u => u.id.startsWith(fopFolder + '/') || u.id.includes(fopFolder))
+  .sort((a, b) => {
+    const parse = (d: string) => {
+      const p = d.split('/');
+      return p.length === 3 ? new Date(`${p[2]}-${p[1]}-${p[0]}`).getTime() : 0;
+    };
+    return parse(a.data.data) - parse(b.data.data);
+  });
+
+// Render each update and collect headings
+const renderedUpdates = [];
+for (const upd of updates) {
+  const { Content: UpdateContent, headings: updHeadings } = await render(upd);
+  renderedUpdates.push({ data: upd.data, Content: UpdateContent, headings: updHeadings });
+}
+
+function stampClass(stato: string): string {
+  const map: Record<string, string> = { Aperto: 'open', Chiuso: 'chiuso', Cold: 'cold', Archiviato: 'archiviato' };
+  return map[stato] || 'open';
+}
+
+function slugify(text: string): string {
+  return text.toLowerCase().replace(/[^a-z0-9\u00C0-\u024F]+/gi, '-').replace(/(^-|-$)/g, '');
+}
+---
+
+<MainLayout title={fop.data.titolo} section="fop" paranaturale={fop.data.paranaturale} eyesOnlyRequired={fop.data.eyes_only}>
+  <div class="fascicolo-wrapper">
+
+    {/* ── Sidebar TOC ── */}
+    <nav class="fascicolo-toc">
+      <div class="fascicolo-toc-title">Indice</div>
+      {headings.filter(h => h.depth <= 3).map(h => (
+        <a href={`#${h.slug}`} class={h.depth === 3 ? 'toc-h3' : ''}>
+          {h.text}
+        </a>
+      ))}
+      {renderedUpdates.map(upd => (
+        <a href={`#upd-${slugify(upd.data.titolo)}`} class="toc-update">
+          ↳ {upd.data.data}
+        </a>
+      ))}
+    </nav>
+
+    {/* ── Main content ── */}
+    <div class="fascicolo-main-content">
+
+      {/* Header del fascicolo */}
+      <div class="fascicolo-header">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+          <div>
+            <div class="code-big">{fop.data.codice_univoco}</div>
+            <h1>{fop.data.titolo}</h1>
+          </div>
+          <span class:list={['stamp', stampClass(fop.data.stato)]} style="position: static;">
+            {fop.data.stato}
+          </span>
+        </div>
+
+        <div class="fascicolo-meta">
+          <div><dt>Data apertura</dt><dd>{fop.data.data_apertura}</dd></div>
+          {fop.data.data_riapertura && <div><dt>Riaperto</dt><dd>{fop.data.data_riapertura}</dd></div>}
+          <div><dt>Ultimo aggiornamento</dt><dd>{fop.data.ultimo_aggiornamento}</dd></div>
+          <div><dt>Classificazione</dt><dd>{fop.data.classificazione_evento || '—'}</dd></div>
+          {fop.data.paranaturale && <div><dt>Natura</dt><dd style="color: var(--danger);"><i class="fa-solid fa-triangle-exclamation"></i> PARANATURALE</dd></div>}
+        </div>
+
+        {fop.data.agenti_coinvolti.length > 0 && (
+          <div style="margin-top: 12px; font-size: 12px; color: var(--text-secondary);">
+            <strong style="font-family: var(--font-mono); font-size: 10px; color: var(--muted); letter-spacing: 1px;">AGENTI COINVOLTI:</strong>
+            {fop.data.agenti_coinvolti.join(' – ')}
+          </div>
+        )}
+
+        {fop.data.entita_collegate.length > 0 && (
+          <div style="margin-top: 8px; font-size: 12px; color: var(--text-secondary);">
+            <strong style="font-family: var(--font-mono); font-size: 10px; color: var(--muted); letter-spacing: 1px;">ENTITÀ COLLEGATE:</strong>
+            {fop.data.entita_collegate.map(e => (
+              <span class="category-tag" style="margin-left: 4px;">{e}</span>
+            ))}
+          </div>
+        )}
+
+        <span class="sync-ok">● SINCRONIZZATO</span>
+      </div>
+
+      {/* Corpo del fascicolo */}
+      <div class="fascicolo-body">
+        <Content />
+
+        {/* Aggiornamenti auto-appendati */}
+        {renderedUpdates.map(upd => (
+          <div>
+            <div class="update-separator" id={`upd-${slugify(upd.data.titolo)}`}>
+              AGGIORNAMENTO — {upd.data.data}
+            </div>
+            <div style="font-family: var(--font-mono); margin-bottom: 20px; border-left: 2px solid var(--accent); padding-left: 12px;">
+              <strong style="font-size: 14px; color: var(--text); letter-spacing: 0.5px;">{upd.data.titolo}</strong><br/>
+              <span style="font-size: 11px; color: var(--muted);">
+                Responsabile: {upd.data.responsabile}
+                {upd.data.versione_fascicolo && ` • Versione: ${upd.data.versione_fascicolo}`}
+              </span>
+            </div>
+            <div class="update-content">
+              <upd.Content />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div style="margin-top: 20px; text-align: center;">
+        <a href="/" style="font-family: var(--font-mono); font-size: 11px; letter-spacing: 1px;">← TORNA ALL'ARCHIVIO F.O.P.</a>
+      </div>
+
+    </div>
+  </div>
+</MainLayout>

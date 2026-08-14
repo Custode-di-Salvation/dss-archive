@@ -1,0 +1,69 @@
+---
+import MainLayout from '../layouts/MainLayout.astro';
+import { getCollection } from 'astro:content';
+
+const fops = await getCollection('fop');
+const scps = await getCollection('scp');
+
+// Aggregate all uncompleted actions directly from the markdown bodies
+const fopAzioni = fops
+  .map(f => {
+    if (!f.body) return null;
+    const matches = f.body.match(/^- \[ \] (.*)$/gm);
+    if (!matches) return null;
+    
+    const azioniEstratte = matches.map(m => 
+      m.replace(/^- \[ \] /, '').replace(/\*\*OP-\d+.*?\*\*:?\s*/, '').trim()
+    );
+
+    return {
+      codice: f.data.codice_univoco,
+      titolo: f.data.titolo,
+      stato: f.data.stato,
+      tipo: 'FOP',
+      slug: `/fop/${f.id}/`,
+      azioni: azioniEstratte,
+      paranaturale: f.data.paranaturale,
+      eyes_only: f.data.eyes_only,
+    };
+  })
+  .filter(Boolean);
+
+const tutteLe = [...fopAzioni];
+const totaleAzioni = tutteLe.reduce((sum, f) => sum + f.azioni.length, 0);
+---
+
+<MainLayout title="Azioni in Corso" section="azioni">
+  <main style="max-width: 960px; margin: 0 auto; padding: 20px 24px;">
+
+    <div style="margin-bottom: 20px;">
+      <h2 style="font-family: var(--font-mono); font-size: 14px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text);">
+        <i class="fa-solid fa-triangle-exclamation" style="color: var(--warn);"></i> Bacheca Azioni Investigative / Operative in Corso
+      </h2>
+      <p style="font-size: 12px; color: var(--muted); margin-top: 4px;">
+        {totaleAzioni} azioni attive da {tutteLe.length} fascicoli.
+      </p>
+    </div>
+
+    {tutteLe.map(fascicolo => (
+      <div class:list={['actions-panel', (fascicolo.paranaturale || fascicolo.eyes_only) && 'censored']} style={fascicolo.tipo === 'SCP' ? 'border-color: var(--danger);' : ''} data-paranaturale={String(fascicolo.paranaturale)} data-eyes-only={fascicolo.eyes_only || ''}>
+        <h3 style={fascicolo.tipo === 'SCP' ? 'color: var(--danger);' : ''}>
+          <a href={fascicolo.slug} style={`color: inherit; text-decoration: none;`}>
+            {fascicolo.codice}
+          </a>
+          — {fascicolo.titolo}
+          <span class:list={['stamp', fascicolo.stato === 'Aperto' ? 'open' : fascicolo.stato === 'Cold' ? 'cold' : 'classified']} style="position: static; margin-left: 8px;">
+            {fascicolo.stato}
+          </span>
+        </h3>
+        {fascicolo.azioni.map(azione => (
+          <div class="action-item">
+            <a href={fascicolo.slug} class="ref">{fascicolo.codice}</a>
+            {azione}
+          </div>
+        ))}
+      </div>
+    ))}
+
+  </main>
+</MainLayout>

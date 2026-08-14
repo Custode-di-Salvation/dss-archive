@@ -1,0 +1,144 @@
+---
+import MainLayout from '../../layouts/MainLayout.astro';
+import { getCollection, render } from 'astro:content';
+
+export async function getStaticPaths() {
+  const scps = await getCollection('scp');
+  return scps.map(scp => ({
+    params: { slug: scp.id },
+    props: { scp },
+  }));
+}
+
+const { scp } = Astro.props;
+const { Content, headings } = await render(scp);
+
+// Get updates for this SCP
+const allUpdates = await getCollection('scpUpdates');
+const scpFolder = scp.id.replace(/\/index$/, '').replace(/^.*\//, '');
+const updates = allUpdates
+  .filter(u => u.id.startsWith(scpFolder + '/') || u.id.includes(scpFolder))
+  .sort((a, b) => a.data.data.localeCompare(b.data.data));
+
+const renderedUpdates = [];
+for (const upd of updates) {
+  const { Content: UpdateContent, headings: updHeadings } = await render(upd);
+  renderedUpdates.push({ data: upd.data, Content: UpdateContent, headings: updHeadings });
+}
+
+function threatClass(lm: string): string {
+  if (lm.includes('4')) return 'lw4';
+  if (lm.includes('3')) return 'lw3';
+  if (lm.includes('2')) return 'lw2';
+  return 'lw1';
+}
+
+function slugify(text: string): string {
+  return text.toLowerCase().replace(/[^a-z0-9\u00C0-\u024F]+/gi, '-').replace(/(^-|-$)/g, '');
+}
+
+function stampClass(stato: string): string {
+  const map: Record<string, string> = { Neutralizzato: 'chiuso', Latente: 'cold', Stabile: 'open' };
+  return map[stato] || 'open';
+}
+---
+
+<MainLayout title={scp.data.denominazione} section="scp" requiresAA={true}>
+  <div class="fascicolo-wrapper">
+
+    {/* ── Sidebar TOC ── */}
+    <nav class="fascicolo-toc">
+      <div class="fascicolo-toc-title">Indice</div>
+      {headings.filter(h => h.depth <= 3).map(h => (
+        <a href={`#${h.slug}`} class={h.depth === 3 ? 'toc-h3' : ''}>
+          {h.text}
+        </a>
+      ))}
+      {renderedUpdates.map(upd => (
+        <a href={`#upd-${slugify(upd.data.titolo)}`} class="toc-update">
+          ↳ {upd.data.data}
+        </a>
+      ))}
+    </nav>
+
+    {/* ── Main content ── */}
+    <div class="fascicolo-main-content">
+
+      {/* Header della scheda */}
+      <div class="fascicolo-header" style="border-color: var(--danger);">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+          <div>
+            <div class="code-big" style="color: var(--danger);">{scp.data.codice_univoco}</div>
+            <h1>{scp.data.denominazione}</h1>
+          </div>
+          <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
+            <span class:list={['threat-badge', threatClass(scp.data.livello_minaccia)]}>
+              {scp.data.livello_minaccia}
+            </span>
+            {scp.data.stato && (
+              <span class:list={['stamp', stampClass(scp.data.stato)]} style="position: static;">
+                {scp.data.stato.toUpperCase()}
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div class="fascicolo-meta">
+          <div><dt>Data apertura</dt><dd>{scp.data.data_apertura}</dd></div>
+          <div><dt>Ultimo addendum</dt><dd>{scp.data.ultimo_aggiornamento}</dd></div>
+          <div><dt>Categoria</dt><dd>{scp.data.categoria}</dd></div>
+          {scp.data.idr && <div><dt>IDR</dt><dd style={`color: ${scp.data.idr >= 7 ? 'var(--danger)' : scp.data.idr >= 5 ? 'var(--warn)' : 'var(--ok)'};`}>{scp.data.idr}</dd></div>}
+          {scp.data.localizzazione && <div><dt>Localizzazione</dt><dd>{scp.data.localizzazione}</dd></div>}
+        </div>
+
+        {scp.data.agenti_coinvolti.length > 0 && (
+          <div style="margin-top: 12px; font-size: 12px; color: var(--text-secondary);">
+            <strong style="font-family: var(--font-mono); font-size: 10px; color: var(--muted); letter-spacing: 1px;">AGENTI RICERCA:</strong>
+            {scp.data.agenti_coinvolti.join(' – ')}
+          </div>
+        )}
+
+        {scp.data.fop_collegati.length > 0 && (
+          <div style="margin-top: 8px; font-size: 12px; color: var(--text-secondary);">
+            <strong style="font-family: var(--font-mono); font-size: 10px; color: var(--muted); letter-spacing: 1px;">FOP COLLEGATI:</strong>
+            {scp.data.fop_collegati.map(f => (
+              <span class="category-tag" style="margin-left: 4px;">{f}</span>
+            ))}
+          </div>
+        )}
+
+        <div style="margin-top: 10px;">
+          <span class="sync-ok">● SINCRONIZZATO</span>
+          <span style="font-family: var(--font-mono); font-size: 9px; color: var(--danger); margin-left: 12px; letter-spacing: 1px;">AA-ONLY / DO NOT DISTRIBUTE</span>
+        </div>
+      </div>
+
+      {/* Corpo della scheda */}
+      <div class="fascicolo-body">
+        <Content />
+
+        {renderedUpdates.map(upd => (
+          <div>
+            <div class="update-separator" id={`upd-${slugify(upd.data.titolo)}`}>
+              ADDENDUM — {upd.data.data}
+            </div>
+            <div style="font-family: var(--font-mono); margin-bottom: 20px; border-left: 2px solid var(--accent); padding-left: 12px;">
+              <strong style="font-size: 14px; color: var(--text); letter-spacing: 0.5px;">{upd.data.titolo}</strong><br/>
+              <span style="font-size: 11px; color: var(--muted);">
+                Responsabile: {upd.data.responsabile}
+              </span>
+            </div>
+            <div class="update-content">
+              <upd.Content />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div style="margin-top: 20px; text-align: center;">
+        <a href="/scp/" style="font-family: var(--font-mono); font-size: 11px; letter-spacing: 1px;">← TORNA ALL'ARCHIVIO S.C.P.</a>
+      </div>
+
+    </div>
+  </div>
+</MainLayout>

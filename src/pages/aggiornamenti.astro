@@ -1,0 +1,80 @@
+---
+import MainLayout from '../layouts/MainLayout.astro';
+import { getCollection } from 'astro:content';
+
+const fops = await getCollection('fop');
+const scps = await getCollection('scp');
+
+// Combine and sort by ultimo_aggiornamento (most recent first)
+const tutti = [
+  ...fops.map(f => ({
+    codice: f.data.codice_univoco,
+    titolo: f.data.titolo,
+    tipo: 'FOP',
+    stato: f.data.stato,
+    aggiornamento: f.data.ultimo_aggiornamento,
+    slug: `/fop/${f.id}/`,
+    paranaturale: f.data.paranaturale,
+  })),
+  ...scps.map(s => ({
+    codice: s.data.codice_univoco,
+    titolo: s.data.denominazione,
+    tipo: 'SCP',
+    stato: 'Attivo',
+    aggiornamento: s.data.ultimo_aggiornamento,
+    slug: `/scp/${s.id}/`,
+    paranaturale: true,
+  })),
+].sort((a, b) => b.aggiornamento.localeCompare(a.aggiornamento));
+
+// Stats
+const fopTotali = fops.length;
+const fopAperti = fops.filter(f => f.data.stato === 'Aperto').length;
+const fopCold = fops.filter(f => f.data.stato === 'Cold').length;
+const scpTotali = scps.length;
+---
+
+<MainLayout title="Aggiornamenti" section="aggiornamenti">
+  <main style="max-width: 960px; margin: 0 auto; padding: 20px 24px;">
+
+    <!-- Stats -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 24px;">
+      <div style="background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; text-align: center;">
+        <div style="font-family: var(--font-mono); font-size: 28px; color: var(--accent); font-weight: 700;">{fopTotali}</div>
+        <div style="font-family: var(--font-mono); font-size: 10px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase;">FOP Totali</div>
+      </div>
+      <div style="background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; text-align: center;">
+        <div style="font-family: var(--font-mono); font-size: 28px; color: var(--ok); font-weight: 700;">{fopAperti}</div>
+        <div style="font-family: var(--font-mono); font-size: 10px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase;">FOP Aperti</div>
+      </div>
+      <div style="background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; text-align: center;">
+        <div style="font-family: var(--font-mono); font-size: 28px; color: var(--cold); font-weight: 700;">{fopCold}</div>
+        <div style="font-family: var(--font-mono); font-size: 10px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase;">Cold Cases</div>
+      </div>
+      <div style="background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; text-align: center;">
+        <div style="font-family: var(--font-mono); font-size: 28px; color: var(--danger); font-weight: 700;">{scpTotali}</div>
+        <div style="font-family: var(--font-mono); font-size: 10px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase;">Schede SCP</div>
+      </div>
+    </div>
+
+    <h2 style="font-family: var(--font-mono); font-size: 14px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text); margin-bottom: 16px;">
+      <i class="fa-solid fa-clock-rotate-left" style="color: var(--accent);"></i> Ultimi Aggiornamenti
+    </h2>
+
+    {tutti.map(item => (
+      <a href={item.slug} class="card" style="display: flex; align-items: center; gap: 16px; margin-bottom: 8px; padding: 12px 16px;" data-paranaturale={String(item.paranaturale)}>
+        <span class="category-tag" style={item.tipo === 'SCP' ? 'color: var(--danger); border-color: var(--danger);' : ''}>
+          {item.tipo}
+        </span>
+        <div style="flex: 1;">
+          <div style="font-family: var(--font-mono); font-size: 10px; color: var(--muted);">{item.codice}</div>
+          <div style="font-size: 13px; color: var(--text);">{item.titolo}</div>
+        </div>
+        <div style="font-family: var(--font-mono); font-size: 11px; color: var(--text-secondary); white-space: nowrap;">
+          {item.aggiornamento}
+        </div>
+      </a>
+    ))}
+
+  </main>
+</MainLayout>
